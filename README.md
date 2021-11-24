@@ -6,4 +6,4 @@ from every other one given it's perants
 
 #### the class should implement 2 main methods
 + BaiseBall: an algorithm that answeres depandancy questions
-+ VariableElimination(VE): Algorithm that answres direct probabilty
++ VariableElimination(VE): Algorithm that answres direct probabilty questions
