@@ -111,15 +111,5 @@ public class Variable {
             }
         }
         return s;
-
-
-
-//        System.out.println(this.name + " CPT: ");
-//        if(this.CPT_cases != null){
-//            for (int i = 0; i < CPT_cases.length; i++){
-//                System.out.println(Arrays.toString(this.CPT_cases[i]) + " " + this.CPT_values[i]);
-//            }
-//        }
-//        return "";
     }
 }

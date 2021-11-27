@@ -110,7 +110,96 @@ public class Net {
     }
 
     public boolean BaiseBall(String question) {
-        return false;
+        String src = "" + question.charAt(0);
+        String dest = "" + question.charAt(2);
+        List<String> knowns = new LinkedList<String>();
+
+        int i = 4;
+        while (i < question.length()){
+            String name = "";
+            char ch = question.charAt(i);;
+            while (ch != '='){
+                name += ch;
+                i++;
+                ch = question.charAt(i);
+            }
+            while (i < question.length() && ch != ','){
+                ch = question.charAt(i);
+                i++;
+            }i++;
+            knowns.add(name);
+        }
+
+        boolean[] beenTo = new boolean[this.AdjList.length];
+        for (i = 0; i < beenTo.length; i++){
+            beenTo[i] = false;
+        }
+
+        return baiseball(src, dest, knowns, beenTo, false);
+    }
+
+    private boolean baiseball(String src, String dest, List<String> knowns, boolean[] beenTo, boolean fromParent){
+        if(src.equals(dest)){
+            return true;
+        }
+        int start_num = this.find_var(src);
+        Variable start = this.getNode(src);
+        beenTo[start_num] = true;
+
+        boolean ans = false;
+
+        if(fromParent){
+            if(knowns.contains(start.name)){
+                for (int i = 0; i < start.parents.size(); i++){
+                    if (ans){
+                        break;
+                    }
+
+                    String parent_name = start.parents.get(i).name;
+                    if (knowns.contains(start.parents.get(i).name)){
+                        continue;
+                    }else if(! beenTo[this.find_var(parent_name)]){
+                        ans = ans  || baiseball(parent_name, dest, knowns, beenTo, false);
+                    }
+                }
+            }else {
+                for (int i = 1; i < this.AdjList[start_num].size(); i++){
+                    if (ans){
+                        break;
+                    }
+
+                    String sons_name = this.AdjList[start_num].get(i).name;
+                    if(! beenTo[this.find_var(sons_name)]){
+                        ans = ans  || baiseball(sons_name, dest, knowns, beenTo, true);
+                    }
+                }
+            }
+        }else if (! knowns.contains(start.name)){
+            for (int i = 1; i < this.AdjList[start_num].size(); i++){
+                if (ans){
+                    break;
+                }
+
+                String sons_name = this.AdjList[start_num].get(i).name;
+                if(! beenTo[this.find_var(sons_name)]){
+                    ans = ans  || baiseball(sons_name, dest, knowns, beenTo, true);
+                }
+            }
+            for (int i = 0; i < start.parents.size(); i++){
+                if (ans){
+                    break;
+                }
+
+                String parent_name = start.parents.get(i).name;
+                if (knowns.contains(start.parents.get(i).name)){
+                    continue;
+                }else if(! beenTo[this.find_var(parent_name)]){
+                    ans = ans  || baiseball(parent_name, dest, knowns, beenTo, false);
+                }
+            }
+        }
+
+        return ans;
     }
 
     public double[][] Variablle_Elimnation(List<double[][]> factors){
