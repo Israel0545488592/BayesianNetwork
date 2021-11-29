@@ -1,5 +1,4 @@
 import org.xml.sax.SAXException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -8,9 +7,11 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -88,7 +89,7 @@ public class Net {
                         i++;
                     }
 
-                    // updating the PCT
+                    // updating the CPT
                     NodeList probabilties = eElement.getElementsByTagName("TABLE");
                     curr.setCPT(probabilties.item(0).getTextContent());
                 }
@@ -126,7 +127,7 @@ public class Net {
             while (i < question.length() && ch != ','){
                 ch = question.charAt(i);
                 i++;
-            }i++;
+            }
             knowns.add(name);
         }
 
@@ -202,12 +203,184 @@ public class Net {
         return ans;
     }
 
-    public double[][] Variablle_Elimnation(List<double[][]> factors){
+    public String compute(String question) {
+        String ans;
+
+        if (question.charAt(0) == 'P'){//dont forget to round
+            ans = String.valueOf(this.probabilty(question.substring(2, question.indexOf(')'))));
+        }else {
+            if (this.BaiseBall(question)){
+                ans = "no";
+            }else {
+                ans = "yes";
+            }
+        }
+
+        return ans;
+    }
+
+    private double probabilty(String question){
+        List<String> knowns = new LinkedList<String>();
+        int i = 0, j = 0;
+
+        while (i < question.length()){
+            while (j < question.length() && ! ("|,".contains("" + question.charAt(j)))){
+                j++;
+            }
+            knowns.add(question.substring(i, j));
+            i = j+1;
+            j++;
+        }
+
+        String vars = "";
+        for (i = 0; i < this.AdjList.length; i++){
+            vars += AdjList[i].get(0).name;
+            vars += ',';
+        }
+        String[] questions = ChainRule(vars);
+
+        double[][] fjd = this.VE(questions, knowns);
+
+
+        return 0;
+    }
+
+    private String[] ChainRule(String questions){
+        String[] ans = questions.split(",");
+
+        if(ans.length > 1){
+
+            String[] tmp = Arrays.copyOf(ans, ans.length);
+            for (int i = 1; i < ans.length; i++){
+
+                ans[i] += '|';
+                int j = i -1;
+                while (j >= 0){
+                    ans[i] += tmp[j];
+                    if (j != 0){
+                        ans[i] += ',';
+                    }
+                    j--;
+                }
+            }
+        }
+
+        return ans;
+    }
+
+    public double[][] VE(String[] questions, List<String> knowns){//Variable_Elimination
+        questions = getRidOf_IndependentVariables(questions);
+
+        List<String> unknows = new LinkedList<String>();
+        for (int i = 0; i < this.AdjList.length; i++){
+            Variable v = this.AdjList[i].get(0);
+            boolean isKnown = false;
+            for (int j = 0; j < knowns.size(); j++){
+                if (knowns.get(j).contains(v.name)){
+                    isKnown = true;
+                    break;
+                }
+            }
+            if (! isKnown){
+                unknows.add(v.name);
+            }
+        }
+
+        String[] factorChain = new String[questions.length + unknows.size()];
+        factorChain = arrange(factorChain, unknows, questions);
+
+        //freeFactors( dont involve hidden variables)
+        for (int i = 0, j = 0; i < questions.length; i++){
+            if (questions[i] != null){
+                factorChain[j] = questions[i];
+                j++;
+            }
+        }
+
+
+
+        //join
+
         return null;
     }
 
-    public double compute(String question) {
-        return 0;
+    private String[] arrange(String[] factorChain, List<String> unknows, String[] questions){
+
+        for (int i = 0, j = 0, l = 0; i < unknows.size(); i++) {
+            String unknown = unknows.get(i);
+            l = 0;
+            while (l < questions.length) {
+                if (questions[l] != null){
+                    if (questions[l].contains(unknown)) {
+                        factorChain[factorChain.length - 1 - j] = questions[l];
+                        questions[l] = null;
+                        j++;
+                    }
+                }
+                l++;
+            }
+            factorChain[factorChain.length - 1 - j] = "sumOver" + unknown;
+            j++;
+        }
+
+        return factorChain;
+    }
+
+    private String[] getRidOf_IndependentVariables(String[] questions){//change to private after debug
+        for (int i = 1; i < questions.length; i++){
+            String question = questions[i];
+            String var = "" + question.charAt(0);
+            String givens = question.substring(2);
+            String toEliminate = "";
+
+            for (int j = 0; j < givens.length(); j++){
+                String name = "";
+                while (j < givens.length() && givens.charAt(j) != ','){
+                    name += givens.charAt(j);
+                    j++;
+                }
+
+                String condition = "";
+                for (int l = 0; l < givens.length(); l++){
+                    String name2 = "";
+                    while (l < givens.length() && givens.charAt(l) != ','){
+                        name2 += givens.charAt(l);
+                        l++;
+                    }
+                    if (! name2.equals(name)){
+                        condition += name2 + "=T,";
+                    }
+                }
+                if (condition.length() != 0){
+                    condition = condition.substring(0, condition.length() -1);
+                }
+
+                if (! this.BaiseBall(var + "-" + name + "|" + condition)){
+                    toEliminate += name;
+                }
+            }
+
+            questions[i] = Eliminate(question, toEliminate);
+        }
+
+        return questions;
+    }
+
+    private String Eliminate(String question, String toEliminate){
+        String givens = question.substring(2);
+        int i = 0;
+        while (i < question.length()){
+            if(toEliminate.contains("" +question.charAt(i))){
+                question = question.substring(0, i) + question.substring(i+1);
+            }
+            i++;
+        }
+
+        while ( "|,".contains("" + question.charAt(question.length() -1))){
+            question = question.substring(0, question.length() -1);
+        }
+
+        return question;
     }
 
     public String toString(){
