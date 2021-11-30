@@ -39,8 +39,7 @@ public class Net {
         NodeList var = doc.getElementsByTagName("VARIABLE");
         NodeList cpts = doc.getElementsByTagName("DEFINITION");
 
-        NodeList[] ans = {var, cpts};
-        return ans;
+        return new NodeList[]{var, cpts};
     }
 
     private void buildNET(NodeList var, NodeList cpts){
@@ -111,11 +110,11 @@ public class Net {
     }
 
     public boolean BaiseBall(String question) {
-        String src = "" + question.charAt(0);
-        String dest = "" + question.charAt(2);
-        List<String> knowns = new LinkedList<String>();
+        String src = question.substring(0, question.indexOf('-'));
+        String dest = question.substring(question.indexOf('-') +1, question.indexOf('|'));
+        List<String> knowns = new LinkedList<>();
 
-        int i = 4;
+        int i = question.indexOf('|') +1;
         while (i < question.length()){
             String name = "";
             char ch = question.charAt(i);;
@@ -206,7 +205,7 @@ public class Net {
     public String compute(String question) {
         String ans;
 
-        if (question.charAt(0) == 'P'){//dont forget to round
+        if (question.charAt(0) == 'P'){
             ans = String.valueOf(this.probabilty(question.substring(2, question.indexOf(')'))));
         }else {
             if (this.BaiseBall(question)){
@@ -268,7 +267,7 @@ public class Net {
     public String VE(String[] questions, List<String> knowns){//Variable_Elimination
         questions = getRidOf_IndependentVariables(questions);
 
-        List<String> unknows = new LinkedList<String>();
+        List<String> unknows = new LinkedList<>();
         for (int i = 0; i < this.AdjList.length; i++){
             Variable v = this.AdjList[i].get(0);
             boolean isKnown = false;
@@ -295,10 +294,8 @@ public class Net {
         }
 
         //Join factors
-        List<String[][]> caces = new LinkedList<String[][]>();
+        List<String[][]> caces = new LinkedList<>();
         List<double[]> values = new LinkedList<double[]>();
-        double[] final_values;
-        String[] final_caces;
         int additions = 0, multleplictions = 0;
 
         for (int i = 0; i < factorChain.length; i++){
@@ -359,12 +356,12 @@ public class Net {
 
                         for (int l = 0; l < factor2_val.length; l++){
                             boolean compatable = true;
-                            for (int I = 0; I < valuesOf_common_variables.length; I++){
+                            for (String valuesOf_common_variable : valuesOf_common_variables) {
                                 boolean flag = false;
-                                String val = valuesOf_common_variables[I];
-                                for (int J = 0; J < factor2_cace[l].length; J++){
-                                    if (getNameBeforeSighn(factor2_cace[l][J]).equals(getNameBeforeSighn(val))){
-                                        if (! factor2_cace[l][J].equals(val)){
+                                String val = valuesOf_common_variable;
+                                for (int J = 0; J < factor2_cace[l].length; J++) {
+                                    if (getNameBeforeSighn(factor2_cace[l][J]).equals(getNameBeforeSighn(val))) {
+                                        if (!factor2_cace[l][J].equals(val)) {
                                             compatable = false;
                                             flag = true;
                                             break;
@@ -372,16 +369,16 @@ public class Net {
                                     }
                                 }
 
-                                if (flag){
+                                if (flag) {
                                     break;
                                 }
                             }
 
                             if (compatable) {
                                 int loc2 = 0;
-                                for (int I = 0; I < cas.length; I++) {
-                                    if (!common.contains(getNameBeforeSighn(cas[I]))) {
-                                        NewFactor_cace[loc][loc2] = cas[I];
+                                for (String ca : cas) {
+                                    if (!common.contains(getNameBeforeSighn(ca))) {
+                                        NewFactor_cace[loc][loc2] = ca;
                                         loc2++;
                                     }
                                 }
@@ -440,9 +437,9 @@ public class Net {
 
                             String[] NewCase = new String[cace.length -1];
                             l = 0;
-                            for (int I = 0; I < cace.length; I++){
-                                if (! getNameBeforeSighn(cace[I]).equals(over)){
-                                    NewCase[l] = cace[I];
+                            for (String s : cace) {
+                                if (!getNameBeforeSighn(s).equals(over)) {
+                                    NewCase[l] = s;
                                     l++;
                                 }
                             }
@@ -533,7 +530,7 @@ public class Net {
                 String known = knowns.get(j);
                 known = known.substring(0, known.indexOf('=')) + " = " + known.substring(known.indexOf('=') +1);
                 boolean included = true;
-                int l = 0;
+                int l;
                 for (l = 0; l < cas.length; l++){
                     if (known.equals(cas[l])){
                         break;
@@ -558,7 +555,7 @@ public class Net {
 
     private String[] arrange(String[] factorChain, List<String> unknows, String[] questions){
 
-        for (int i = 0, j = 0, l = 0; i < unknows.size(); i++) {
+        for (int i = 0, j = 0, l; i < unknows.size(); i++) {
             String unknown = unknows.get(i);
             l = 0;
             while (l < questions.length) {
@@ -581,8 +578,8 @@ public class Net {
     private String[] getRidOf_IndependentVariables(String[] questions){//change to private after debug
         for (int i = 1; i < questions.length; i++){
             String question = questions[i];
-            String var = "" + question.charAt(0);
-            String givens = question.substring(2);
+            String var = question.substring(0, question.indexOf('|'));
+            String givens = question.substring(question.indexOf('|') +1);
             String toEliminate = "";
 
             for (int j = 0; j < givens.length(); j++){
@@ -619,11 +616,14 @@ public class Net {
     }
 
     private String Eliminate(String question, String toEliminate){
-        String givens = question.substring(2);
-        int i = 0;
+        int i = question.indexOf('|') +1;
         while (i < question.length()){
-            if(toEliminate.contains("" +question.charAt(i))){
-                question = question.substring(0, i) + question.substring(i+1);
+            int j = i+1;
+            while (j < question.length() && question.charAt(j) != ','){
+                j++;
+            }
+            if(toEliminate.contains(question.substring(i, j))){
+                question = question.substring(0, i) + question.substring(j);
             }
             i++;
         }
