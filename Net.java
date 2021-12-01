@@ -511,6 +511,7 @@ public class Net {
 
             normlizer += Result_values[locationInTable(Result_values, Result_caces, l)];
         }
+        additions += vals.length;
 
         String FinalAns = String.valueOf(Result_values[i] / normlizer);
         if (FinalAns.length() > 7){
