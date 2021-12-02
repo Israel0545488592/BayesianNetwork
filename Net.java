@@ -109,7 +109,7 @@ public class Net {
         return this.AdjList[find_var(name)].get(0);
     }
 
-    public boolean BaiseBall(String question) {
+   public boolean BaiseBall(String question) {
         String src = question.substring(0, question.indexOf('-'));
         String dest = question.substring(question.indexOf('-') +1, question.indexOf('|'));
         List<String> knowns = new LinkedList<>();
@@ -130,21 +130,17 @@ public class Net {
             knowns.add(name);
         }
 
-        boolean[] beenTo = new boolean[this.AdjList.length];
-        for (i = 0; i < beenTo.length; i++){
-            beenTo[i] = false;
-        }
+        List<String> beenTo = new LinkedList<String>();
 
         return baiseball(src, dest, knowns, beenTo, false);
     }
 
-    private boolean baiseball(String src, String dest, List<String> knowns, boolean[] beenTo, boolean fromParent){
+    private boolean baiseball(String src, String dest, List<String> knowns, List<String> beenTo, boolean fromParent){
         if(src.equals(dest)){
             return true;
         }
         int start_num = this.find_var(src);
         Variable start = this.getNode(src);
-        beenTo[start_num] = true;
 
         boolean ans = false;
 
@@ -158,7 +154,8 @@ public class Net {
                     String parent_name = start.parents.get(i).name;
                     if (knowns.contains(start.parents.get(i).name)){
                         continue;
-                    }else if(! beenTo[this.find_var(parent_name)]){
+                    }else if(! beenTo.contains(start.name + parent_name)){
+                        beenTo.add(start.name + parent_name);
                         ans = ans  || baiseball(parent_name, dest, knowns, beenTo, false);
                     }
                 }
@@ -169,7 +166,8 @@ public class Net {
                     }
 
                     String sons_name = this.AdjList[start_num].get(i).name;
-                    if(! beenTo[this.find_var(sons_name)]){
+                    if(! beenTo.contains(start.name + sons_name)){
+                        beenTo.add(start.name +sons_name);
                         ans = ans  || baiseball(sons_name, dest, knowns, beenTo, true);
                     }
                 }
@@ -181,7 +179,8 @@ public class Net {
                 }
 
                 String sons_name = this.AdjList[start_num].get(i).name;
-                if(! beenTo[this.find_var(sons_name)]){
+                if(! beenTo.contains(start.name + sons_name)){
+                    beenTo.add(start.name + sons_name);
                     ans = ans  || baiseball(sons_name, dest, knowns, beenTo, true);
                 }
             }
@@ -193,7 +192,8 @@ public class Net {
                 String parent_name = start.parents.get(i).name;
                 if (knowns.contains(start.parents.get(i).name)){
                     continue;
-                }else if(! beenTo[this.find_var(parent_name)]){
+                }else if(! beenTo.contains(start.name + parent_name)){
+                    beenTo.add(start.name + parent_name);
                     ans = ans  || baiseball(parent_name, dest, knowns, beenTo, false);
                 }
             }
